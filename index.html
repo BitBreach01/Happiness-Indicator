@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Happiness Meter</title>
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #222; color: white; }
+        #video { border: 5px solid #444; border-radius: 10px; width: 90%; max-width: 400px; }
+        #score { font-size: 3rem; margin: 20px; color: #00ff00; }
+        .btn { background: #4CAF50; border: none; color: white; padding: 15px 32px; font-size: 16px; border-radius: 8px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h1>Smile for the Camera!</h1>
+    <div id="score">0% Happy</div>
+    <video id="video" autoplay muted playsinline></video>
+    <br><br>
+    <button class="btn" onclick="startApp()">Start Meter</button>
+
+    <script>
+        async function startApp() {
+            const video = document.getElementById('video');
+            const scoreDiv = document.getElementById('score');
+
+            // 1. Load the AI Models
+            scoreDiv.innerText = "Loading AI...";
+            await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+            await faceapi.nets.faceExpressionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+
+            // 2. Access the Phone Camera
+            const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+            video.srcObject = stream;
+
+            // 3. Detect Happiness every 500ms
+            setInterval(async () => {
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
+                
+                if (detections.length > 0) {
+                    const happyScore = detections[0].expressions.happy;
+                    const percent = Math.round(happyScore * 100);
+                    scoreDiv.innerText = percent + "% Happy";
+                    
+                    // Change color based on score
+                    if(percent > 70) scoreDiv.style.color = "#00ff00"; // Bright Green
+                    else if(percent > 30) scoreDiv.style.color = "#ffff00"; // Yellow
+                    else scoreDiv.style.color = "#ff0000"; // Red
+                }
+            }, 500);
+        }
+    </script>
+</body>
+</html>
