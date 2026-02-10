@@ -1,52 +1,125 @@
 <!DOCTYPE html>
-<html>
+<html lang="hi">
 <head>
-    <title>Happiness Meter</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatic Happiness Meter</title>
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #222; color: white; }
-        #video { border: 5px solid #444; border-radius: 10px; width: 90%; max-width: 400px; }
-        #score { font-size: 3rem; margin: 20px; color: #00ff00; }
-        .btn { background: #4CAF50; border: none; color: white; padding: 15px 32px; font-size: 16px; border-radius: 8px; cursor: pointer; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            text-align: center; 
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); 
+            color: white; 
+            margin: 0; 
+            padding: 20px; 
+            overflow: hidden;
+        }
+        .container { 
+            background: rgba(255, 255, 255, 0.15); 
+            padding: 20px; 
+            border-radius: 25px; 
+            backdrop-filter: blur(10px); 
+            max-width: 400px; 
+            margin: auto;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        #video { 
+            border-radius: 15px; 
+            width: 100%; 
+            transform: scaleX(-1); 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            margin-top: 10px;
+        }
+        #score-display { 
+            font-size: 5rem; 
+            font-weight: 900; 
+            margin: 5px 0; 
+        }
+        #hindi-quote { 
+            font-size: 1.2rem; 
+            min-height: 50px; 
+            color: #fff; 
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .beauty-btn {
+            background: #ff6b81;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
     </style>
 </head>
-<body>
+<body onload="initApp()">
 
-    <h1>Smile for the Camera!</h1>
-    <div id="score">0% Happy</div>
-    <video id="video" autoplay muted playsinline></video>
-    <br><br>
-    <button class="btn" onclick="startApp()">Start Meter</button>
+    <div class="container">
+        <h2 id="greeting">नमस्ते</h2>
+        <div id="score-display">--</div>
+        <div id="hindi-quote">AI Loading... Please wait</div>
+        
+        <video id="video" autoplay muted playsinline></video>
+        
+        <button class="beauty-btn" onclick="alert('AI Analysis: आप आज 100% सुंदर लग रहे हैं! ✨')">✨ Beauty Index</button>
+    </div>
 
     <script>
-        async function startApp() {
-            const video = document.getElementById('video');
-            const scoreDiv = document.getElementById('score');
+        const video = document.getElementById('video');
+        const scoreDiv = document.getElementById('score-display');
+        const quoteDiv = document.getElementById('hindi-quote');
+        const greetingDiv = document.getElementById('greeting');
 
-            // 1. Load the AI Models
-            scoreDiv.innerText = "Loading AI...";
-            await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
-            await faceapi.nets.faceExpressionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+        // Automatic Greeting
+        const hour = new Date().getHours();
+        if (hour < 12) greetingDiv.innerText = "Good Morning! ☀️";
+        else if (hour < 17) greetingDiv.innerText = "Good Afternoon! ☕";
+        else greetingDiv.innerText = "Good Evening! 🌙";
 
-            // 2. Access the Phone Camera
-            const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
-            video.srcObject = stream;
+        async function initApp() {
+            try {
+                // 1. Load AI Models Automatically
+                await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+                await faceapi.nets.faceExpressionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
 
-            // 3. Detect Happiness every 500ms
-            setInterval(async () => {
-                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
+                // 2. Request Camera Automatically
+                const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+                video.srcObject = stream;
                 
-                if (detections.length > 0) {
-                    const happyScore = detections[0].expressions.happy;
-                    const percent = Math.round(happyScore * 100);
-                    scoreDiv.innerText = percent + "% Happy";
-                    
-                    // Change color based on score
-                    if(percent > 70) scoreDiv.style.color = "#00ff00"; // Bright Green
-                    else if(percent > 30) scoreDiv.style.color = "#ffff00"; // Yellow
-                    else scoreDiv.style.color = "#ff0000"; // Red
+                quoteDiv.innerText = "Ready! Smile please 😊";
+                runDetection();
+            } catch (err) {
+                quoteDiv.innerText = "Please allow camera access!";
+                console.error(err);
+            }
+        }
+
+        async function runDetection() {
+            const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
+            
+            if (detections.length > 0) {
+                const happyScore = detections[0].expressions.happy;
+                const percent = Math.round(happyScore * 100);
+                
+                scoreDiv.innerText = percent + "%";
+                
+                if (percent < 30) {
+                    quoteDiv.innerText = "मुस्कुराइए, आप बहुत सुंदर हैं! 😊";
+                    scoreDiv.style.color = "#ff6b6b";
+                } else if (percent < 70) {
+                    quoteDiv.innerText = "Good! आपकी मुस्कान बढ़ रही है। ✨";
+                    scoreDiv.style.color = "#ffd93d";
+                } else {
+                    quoteDiv.innerText = "शानदार! आपकी खुशी अनमोल है। 😍";
+                    scoreDiv.style.color = "#4ef3e1";
                 }
-            }, 500);
+            }
+            requestAnimationFrame(runDetection);
         }
     </script>
 </body>
